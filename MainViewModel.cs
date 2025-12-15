@@ -1,0 +1,114 @@
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Windows;
+using System.Windows.Input;
+using ClickLogger.Model;
+
+namespace ClickLogger.ViewModel
+{
+    public class MainViewModel : INotifyPropertyChanged
+    {
+        private readonly ClickRecorder _recorder;
+
+        private bool _isRecording;
+        public bool IsRecording
+        {
+            get => _isRecording;
+            set
+            {
+                if (_isRecording != value)
+                {
+                    _isRecording = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(RecordButtonText));
+                }
+            }
+        }
+
+        private string _folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "ClickLogger");
+        public string FolderPath
+        {
+            get => _folderPath;
+            set
+            {
+                if (_folderPath != value)
+                {
+                    _folderPath = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public string RecordButtonText => IsRecording ? "STOP" : "REC";
+
+        public ICommand ToggleRecordCommand { get; }
+        public ICommand OpenInExplorerCommand { get; }
+        public ICommand QuitCommand { get; }
+
+        public MainViewModel()
+        {
+            _recorder = new ClickRecorder();
+            _recorder.RecordingStateChanged += (s, isRec) => IsRecording = isRec;
+
+            ToggleRecordCommand = new RelayCommand(ToggleRecord, CanToggleRecord);
+            OpenInExplorerCommand = new RelayCommand(OpenInExplorer);
+            QuitCommand = new RelayCommand(Quit);
+        }
+
+        private bool CanToggleRecord(object parameter) => !string.IsNullOrEmpty(FolderPath);
+
+        private void ToggleRecord(object parameter)
+        {
+            if (IsRecording)
+            {
+                _recorder.StopRecording();
+            }
+            else
+            {
+                try
+                {
+                    _recorder.StartRecording(FolderPath, GetCsvFileName());
+                }
+                catch (InvalidOperationException ex)
+                {
+                    MessageBox.Show(ex.Message);
+                }
+            }
+        }
+
+        private string GetCsvFileName()
+        {
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
+            return $"ClickLog_{timestamp}.csv";
+        }
+
+        private void OpenInExplorer(object parameter)
+        {
+            if (Directory.Exists(FolderPath))
+            {
+            System.Diagnostics.Process.Start("explorer.exe", FolderPath);
+            }
+            else
+            {
+            MessageBox.Show("Folder does not exist.");
+            }
+        }
+
+        private void Quit(object parameter)
+        {
+            if (IsRecording)
+            {
+                _recorder.StopRecording();
+            }
+            Application.Current.Shutdown();
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+    }
+}

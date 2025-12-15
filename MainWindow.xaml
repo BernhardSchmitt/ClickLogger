@@ -1,0 +1,58 @@
+﻿<Window x:Class="ClickLogger.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="clr-namespace:ClickLogger.ViewModel"  
+        Title="Click Logger" Height="200" Width="180" 
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" MouseLeftButtonDown="Window_MouseDown">
+    
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+    
+    <Window.Resources>
+        <Storyboard x:Key="PulseAnimation" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="PulseEffect" Storyboard.TargetProperty="Opacity" From="1.0" To="0.0" Duration="0:0:1" AutoReverse="True"/>
+            <DoubleAnimation Storyboard.TargetName="PulseScale" Storyboard.TargetProperty="ScaleX" From="1.0" To="1.3" Duration="0:0:1"/>
+            <DoubleAnimation Storyboard.TargetName="PulseScale" Storyboard.TargetProperty="ScaleY" From="1.0" To="1.3" Duration="0:0:1"/>
+        </Storyboard>
+    </Window.Resources>
+
+    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+        <Grid Margin="0,0,0,10">
+            <Ellipse x:Name="PulseEffect" Fill="#FF4444" Width="60" Height="60" Opacity="0">
+                <Ellipse.RenderTransform>
+                    <ScaleTransform x:Name="PulseScale" CenterX="30" CenterY="30"/>
+                </Ellipse.RenderTransform>
+            </Ellipse>
+
+            <Button x:Name="RecordBtn" 
+                    Command="{Binding ToggleRecordCommand}" 
+                    Width="60" Height="60" Cursor="Hand">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <Ellipse x:Name="Bg" Fill="#333" Stroke="White" StrokeThickness="2"/>
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Button.Template>
+                <TextBlock x:Name="BtnText" 
+                           Text="{Binding RecordButtonText}" 
+                           Foreground="White" FontWeight="Bold"/>
+            </Button>
+        </Grid>
+
+        <Button Content="Open Log Folder" 
+            Command="{Binding OpenInExplorerCommand}" 
+            Background="Transparent" BorderThickness="0" 
+            Foreground="White" FontSize="10" Cursor="Hand" Opacity="0.7"
+            ToolTip="{Binding FolderPath}"/>
+
+        <Button Content="Quit" 
+            Command="{Binding QuitCommand}" 
+            Background="Transparent" BorderThickness="0" 
+            Foreground="White" FontSize="10" Cursor="Hand" Opacity="0.7"
+            ToolTip="Quit ClickRecorder"/>
+    </StackPanel>
+</Window>
