@@ -40,6 +40,20 @@ namespace ClickLogger.ViewModel
             }
         }
 
+        private string _fileName = "";
+        public string FileName
+        {
+            get => _fileName;
+            set
+            {
+                if (_fileName != value)
+                {
+                    _fileName = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
         public string RecordButtonText => IsRecording ? "STOP" : "REC";
 
         public ICommand ToggleRecordCommand { get; }
@@ -63,16 +77,19 @@ namespace ClickLogger.ViewModel
             if (IsRecording)
             {
                 _recorder.StopRecording();
+                FileName = "";
             }
             else
             {
                 try
                 {
-                    _recorder.StartRecording(FolderPath, GetCsvFileName());
+                    FileName = GetCsvFileName();
+                    _recorder.StartRecording(FolderPath, FileName);
                 }
                 catch (InvalidOperationException ex)
                 {
                     MessageBox.Show(ex.Message);
+                    FileName = "";
                 }
             }
         }
@@ -101,6 +118,7 @@ namespace ClickLogger.ViewModel
             if (IsRecording)
             {
                 _recorder.StopRecording();
+                FileName = "";
             }
             Application.Current.Shutdown();
         }

@@ -1,7 +1,9 @@
-﻿using System.ComponentModel;
+using System;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media.Animation;
+using System.Windows.Threading;
 using ClickLogger.ViewModel;
 
 namespace ClickLogger
@@ -15,12 +17,26 @@ namespace ClickLogger
         {
             InitializeComponent();
             _pulseStoryboard = (Storyboard)this.Resources["PulseAnimation"];
+
+            // position on loaded
+            Loaded += MainWindow_Loaded;
             
             // Subscribe to the ViewModel's property changes to handle UI updates (animation)
             if (ViewModel != null)
             {
                 ViewModel.PropertyChanged += ViewModel_PropertyChanged;
             }
+        }
+
+        private void MainWindow_Loaded(object? sender, RoutedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                var wa = SystemParameters.WorkArea;
+                const double margin = 10; // gap from screen edges
+                Left = wa.Right - ActualWidth - margin;
+                Top = wa.Bottom - ActualHeight - margin;
+            }), DispatcherPriority.Loaded);
         }
 
         private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
