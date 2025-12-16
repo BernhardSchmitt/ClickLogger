@@ -90,7 +90,7 @@ namespace ClickLogger.Model
 
             if (_screenshotCamera != null && _saveScreenshot != null)
             {
-                Bitmap screenshot = ScreenshotCamera.TakeScreenshotAt(e.X, e.Y, 400);
+                Bitmap screenshot = ScreenshotCamera.TakeScreenshotAt(e, 400);
                 string screenshotFileName = $"{dateTime.ToString("yyyyMMdd_HHmmssfff")}.{GetScreenshotFileExtension()}";
                 string screenshotFilePath = Path.Combine(LogPath, screenshotFileName);
                 _saveScreenshot.Save(screenshot, screenshotFilePath);
