@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.IO;
+using System.Windows.Forms;
 using Gma.System.MouseKeyHook;
 
 namespace ClickLogger.Model
@@ -80,7 +81,7 @@ namespace ClickLogger.Model
             _csvWriter = null;
         }
 
-        private void LogEvent(object? sender, System.Windows.Forms.MouseEventArgs e)
+        private void LogEvent(object? sender, MouseEventArgs e)
         {
             DateTime dateTime = DateTime.Now;
             string timestampCsv = dateTime.ToString("yyyy-MM-dd HH:mm:ss.fff");
@@ -89,7 +90,7 @@ namespace ClickLogger.Model
 
             if (_screenshotCamera != null && _saveScreenshot != null)
             {
-                Bitmap screenshot = ScreenshotCamera.TakeScreenshotAt(e.X, e.Y, 200);
+                Bitmap screenshot = ScreenshotCamera.TakeScreenshotAt(e.X, e.Y, 400);
                 string screenshotFileName = $"{dateTime.ToString("yyyyMMdd_HHmmssfff")}.{GetScreenshotFileExtension()}";
                 string screenshotFilePath = Path.Combine(LogPath, screenshotFileName);
                 _saveScreenshot.Save(screenshot, screenshotFilePath);
