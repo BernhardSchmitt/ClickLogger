@@ -6,7 +6,7 @@ using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using ClickLogger.ViewModel;
 
-namespace ClickLogger
+namespace ClickLogger.View
 {
     public partial class MainWindow : Window
     {
