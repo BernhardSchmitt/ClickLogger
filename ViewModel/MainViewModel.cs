@@ -62,7 +62,7 @@ namespace ClickLogger.ViewModel
 
         public MainViewModel()
         {
-            _recorder = new ClickRecorder();
+            _recorder = new ClickRecorder(new ScreenshotCamera(), new SaveScreenshotJpg());
             _recorder.RecordingStateChanged += (s, isRec) => IsRecording = isRec;
 
             ToggleRecordCommand = new RelayCommand(ToggleRecord, CanToggleRecord);
@@ -83,8 +83,7 @@ namespace ClickLogger.ViewModel
             {
                 try
                 {
-                    FileName = GetCsvFileName();
-                    _recorder.StartRecording(FolderPath, FileName);
+                    _recorder.StartRecording(GetSessionPath());
                 }
                 catch (InvalidOperationException ex)
                 {
@@ -94,11 +93,9 @@ namespace ClickLogger.ViewModel
             }
         }
 
-        private string GetCsvFileName()
+        private string GetSessionPath()
         {
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-
-            return $"ClickLog_{timestamp}.csv";
+            return Path.Combine(FolderPath, DateTime.Now.ToString("yyyyMMdd_HHmmss"));
         }
 
         private void OpenInExplorer(object parameter)
