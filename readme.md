@@ -1,7 +1,7 @@
 
 # ClickLogger
 
-A mouse event logger with optional screenshot capture, designed as a modern alternative to Microsoft's deprecated Problem Steps Recorder (PSR).
+A mouse event logger with screenshot capture, designed as a modern alternative to Microsoft's deprecated Problem Steps Recorder (PSR).
 
 ## Features
 
@@ -22,7 +22,7 @@ A mouse event logger with optional screenshot capture, designed as a modern alte
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/ClickLogger.git
+    git clone https://github.com/BernhardSchmitt/ClickLogger.git
     ```
 
 2. Build the project:

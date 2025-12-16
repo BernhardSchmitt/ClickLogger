@@ -1,5 +1,5 @@
-using System;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 
 namespace ClickLogger.Model
@@ -18,7 +18,7 @@ namespace ClickLogger.Model
             if (!Directory.Exists(directory))
                 throw new DirectoryNotFoundException($"The directory '{directory}' does not exist.");
 
-            screenshot.Save(filePath, System.Drawing.Imaging.ImageFormat.Jpeg);
+            screenshot.Save(filePath, ImageFormat.Jpeg);
         }
     }
 }
