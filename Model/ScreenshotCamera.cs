@@ -18,30 +18,35 @@ namespace ClickLogger.Model
 
                 // Draw overlay at click position
                 Color overlayColor = Color.Red;
-                int innerRadius = 6;
+                int innerRadius = 4;
                 using (Pen pen = new Pen(overlayColor, 2))
                 {
                     g.DrawArc(pen, screenshotOffset.X - innerRadius / 2, screenshotOffset.Y  - innerRadius / 2, innerRadius, innerRadius, 0, 360);
                 }
 
-                // Draw outer half circle to indicate left or right mouse button
-                int outerRadius = 40;
+                // Draw outer half circle(s) to indicate left or right mouse button click(s)
+                int outerRadius = 30;
+                int deltaRadius = 8;
                 
-                if (e.Button == MouseButtons.Left)
+                for (int i = 0; i < e.Clicks; i++)
                 {
-                    // Left half circle
-                    using (Pen pen = new Pen(overlayColor, 2))
+                    if (e.Button == MouseButtons.Left)
                     {
-                        g.DrawArc(pen, screenshotOffset.X - outerRadius / 2, screenshotOffset.Y  - outerRadius / 2, outerRadius, outerRadius, 90, 180);
+                        // Left half circle
+                        using (Pen pen = new Pen(overlayColor, 2))
+                        {
+                            g.DrawArc(pen, screenshotOffset.X - outerRadius / 2, screenshotOffset.Y  - outerRadius / 2, outerRadius, outerRadius, 90, 180);
+                        }
                     }
-                }
-                else if (e.Button == MouseButtons.Right)
-                {
-                    // Right half circle
-                    using (Pen pen = new Pen(overlayColor, 2))
+                    else if (e.Button == MouseButtons.Right)
                     {
-                        g.DrawArc(pen, screenshotOffset.X - outerRadius / 2, screenshotOffset.Y  - outerRadius / 2, outerRadius, outerRadius, 270, 180);
+                        // Right half circle
+                        using (Pen pen = new Pen(overlayColor, 2))
+                        {
+                            g.DrawArc(pen, screenshotOffset.X - outerRadius / 2, screenshotOffset.Y  - outerRadius / 2, outerRadius, outerRadius, 270, 180);
+                        }
                     }
+                    outerRadius += deltaRadius;
                 }
             }
             return bitmap;
