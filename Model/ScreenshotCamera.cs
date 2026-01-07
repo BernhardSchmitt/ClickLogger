@@ -18,10 +18,16 @@ namespace ClickLogger.Model
 
                 // Draw overlay at click position
                 Color overlayColor = Color.Red;
-                int innerRadius = 4;
-                using (Pen pen = new Pen(overlayColor, 2))
+                Color semiTransparentColor = Color.FromArgb(128, overlayColor.R, overlayColor.G, overlayColor.B);
+                int innerRadius = 10;
+
+                using (SolidBrush brush = new SolidBrush(semiTransparentColor))
                 {
-                    g.DrawArc(pen, screenshotOffset.X - innerRadius / 2, screenshotOffset.Y  - innerRadius / 2, innerRadius, innerRadius, 0, 360);
+                    int diameter = innerRadius * 2;
+                    int rectX = screenshotOffset.X - innerRadius;
+                    int rectY = screenshotOffset.Y - innerRadius;
+
+                    g.FillEllipse(brush, rectX, rectY, diameter, diameter);
                 }
 
                 // Draw outer half circle(s) to indicate left or right mouse button click(s)
@@ -54,16 +60,40 @@ namespace ClickLogger.Model
 
         private static Point GetScreenshotOffset(int cursorX, int cursorY, int size)
         {
+            // Get the total bounding box of all displays (the virtual canvas)
+            Rectangle virtualScreenBounds = SystemInformation.VirtualScreen;
+
+            // 1. Calculate the initial top-left corner of the screenshot area
             int left = cursorX - size / 2;
             int top = cursorY - size / 2;
 
-            // Adjust if boundaries are exceeded
-            if (left < 0) left = 0;
-            if (top < 0) top = 0;
-            if (Screen.PrimaryScreen != null && left + size > Screen.PrimaryScreen.Bounds.Width)
-                left = Screen.PrimaryScreen.Bounds.Width - size;
-            if (Screen.PrimaryScreen != null && top + size > Screen.PrimaryScreen.Bounds.Height)
-                top = Screen.PrimaryScreen.Bounds.Height - size;
+            // 2. Adjust if boundaries are exceeded (Boundary checks for the virtual canvas)
+
+            // Check against the LEFT edge of the virtual canvas (usually 0, but can be negative)
+            if (left < virtualScreenBounds.Left)
+            {
+                left = virtualScreenBounds.Left;
+            }
+
+            // Check against the TOP edge of the virtual canvas (usually 0, but can be negative)
+            if (top < virtualScreenBounds.Top)
+            {
+                top = virtualScreenBounds.Top;
+            }
+
+            // Check against the RIGHT edge of the virtual canvas
+            if (left + size > virtualScreenBounds.Right)
+            {
+                // Adjust 'left' so the right edge of the screenshot aligns with the virtual screen's right edge
+                left = virtualScreenBounds.Right - size;
+            }
+
+            // Check against the BOTTOM edge of the virtual canvas
+            if (top + size > virtualScreenBounds.Bottom)
+            {
+                // Adjust 'top' so the bottom edge of the screenshot aligns with the virtual screen's bottom edge
+                top = virtualScreenBounds.Bottom - size;
+            }
 
             return new Point(cursorX - left, cursorY - top);
         }
