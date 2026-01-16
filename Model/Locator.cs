@@ -35,13 +35,15 @@ namespace ClickLogger.Model
             return string.Empty;
         }
 
-        public static string GetAutomationIdFromWindowHandle(IntPtr hWnd)
+        public static string GetAutomationIdAndNameFromWindowHandle(IntPtr hWnd)
         {
             try
             {
                 AutomationElement element = AutomationElement.FromHandle(hWnd);
-                string automationId = element.Current.AutomationId;
-                return !string.IsNullOrEmpty(automationId) ? automationId : string.Empty;
+                var automationId = element.Current.AutomationId;
+                var name = element.Current.Name;
+                
+                return !string.IsNullOrEmpty(name) ? $"{automationId}|{name}" : $"{automationId}{name}";
             }
             catch
             {

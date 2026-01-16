@@ -93,8 +93,9 @@ namespace ClickLogger.Model
             string eventParameter = $"{e.X};{e.Y}";
 
             var locatedWindowHandle = Locator.GetWindowHandleFromPoint(e.X, e.Y);
-            string processName = "";
-            string windowTitle = "";
+            string processName = string.Empty;
+            string windowTitle = string.Empty;
+            
             if (locatedWindowHandle != IntPtr.Zero)
             {
                 processName = Locator.GetProcessNameFromWindowHandle(locatedWindowHandle);
