@@ -21,17 +21,17 @@ A mouse event logger with screenshot capture, designed as a modern alternative t
 ### Installation
 
 1. Clone the repository:
-    ```bash
+    ```
     git clone https://github.com/BernhardSchmitt/ClickLogger.git
     ```
 
 2. Build the project:
-    ```bash
+    ```
     dotnet build
     ```
 
 3. Run the application:
-    ```bash
+    ```
     dotnet run
     ```
 
@@ -45,8 +45,13 @@ A mouse event logger with screenshot capture, designed as a modern alternative t
 
 ## Configuration
 
-todo
-
+### Blacklisting
+Place a blacklist.csv file next to the executable to blacklist applications by process name and optional window name.  
+```
+ProcessName,WindowName
+ClickLogger
+dotnet,Click Logger
+```
 
 ## License
 
