@@ -10,4 +10,9 @@
   <ItemGroup>
     <PackageReference Include="MouseKeyHook" Version="5.7.1" /> 
   </ItemGroup>
+  <ItemGroup>
+    <None Update="blacklist.csv">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+</ItemGroup>
 </Project>
