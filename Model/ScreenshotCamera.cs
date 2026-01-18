@@ -5,57 +5,83 @@ namespace ClickLogger.Model
 {
     public class ScreenshotCamera
     {
-        public static Bitmap TakeScreenshotAt(MouseEventArgs e, int size)
+        private static readonly Color _overlayColor = Color.Red;
+
+        public static Bitmap TakeScreenshotAt(MouseEventArgs startEventArgs, MouseEventArgs? endEventArgs = null, int size = 400)
         {
             Bitmap bitmap = new(size, size);
-            
+
             using (Graphics g = Graphics.FromImage(bitmap))
             {
                 // cursor position should be at center of screenshot if surrounding space allows
                 // calculate offset for top-left of screenshot
-                Point screenshotOffset = GetScreenshotOffset(e.X, e.Y, size);
-                g.CopyFromScreen(e.X - screenshotOffset.X, e.Y - screenshotOffset.Y, 0, 0, new Size(size, size));
+                Point screenshotOffset = GetScreenshotOffset(startEventArgs.X, startEventArgs.Y, size);
+                g.CopyFromScreen(startEventArgs.X - screenshotOffset.X, startEventArgs.Y - screenshotOffset.Y, 0, 0, new Size(size, size));
 
-                // Draw overlay at click position
-                Color overlayColor = Color.Red;
-                Color semiTransparentColor = Color.FromArgb(128, overlayColor.R, overlayColor.G, overlayColor.B);
-                int innerRadius = 10;
-
-                using (SolidBrush brush = new SolidBrush(semiTransparentColor))
+                if (endEventArgs == null)
                 {
-                    int diameter = innerRadius * 2;
-                    int rectX = screenshotOffset.X - innerRadius;
-                    int rectY = screenshotOffset.Y - innerRadius;
-
-                    g.FillEllipse(brush, rectX, rectY, diameter, diameter);
+                    // It's a click event
+                    DrawClickOverlay(g, new Point(screenshotOffset.X, screenshotOffset.Y), startEventArgs.Button, startEventArgs.Clicks);
                 }
-
-                // Draw outer half circle(s) to indicate left or right mouse button click(s)
-                int outerRadius = 30;
-                int deltaRadius = 8;
-                
-                for (int i = 0; i < e.Clicks; i++)
+                else
                 {
-                    if (e.Button == MouseButtons.Left)
-                    {
-                        // Left half circle
-                        using (Pen pen = new Pen(overlayColor, 2))
-                        {
-                            g.DrawArc(pen, screenshotOffset.X - outerRadius / 2, screenshotOffset.Y  - outerRadius / 2, outerRadius, outerRadius, 90, 180);
-                        }
-                    }
-                    else if (e.Button == MouseButtons.Right)
-                    {
-                        // Right half circle
-                        using (Pen pen = new Pen(overlayColor, 2))
-                        {
-                            g.DrawArc(pen, screenshotOffset.X - outerRadius / 2, screenshotOffset.Y  - outerRadius / 2, outerRadius, outerRadius, 270, 180);
-                        }
-                    }
-                    outerRadius += deltaRadius;
+                    // It's a drag event
+                    Point startPoint = new Point(startEventArgs.X - (startEventArgs.X - screenshotOffset.X), startEventArgs.Y - (startEventArgs.Y - screenshotOffset.Y));
+                    Point endPoint = new Point(endEventArgs.X - (startEventArgs.X - screenshotOffset.X), endEventArgs.Y - (startEventArgs.Y - screenshotOffset.Y));
+                    DrawDragOverlay(g, startPoint, endPoint);
                 }
             }
             return bitmap;
+        }
+
+        private static void DrawClickOverlay(Graphics g, Point center, MouseButtons button, int clicks)
+        {
+            // Draw overlay at click position
+            Color semiTransparentColor = Color.FromArgb(128, _overlayColor.R, _overlayColor.G, _overlayColor.B);
+            int innerRadius = 10;
+
+            using (SolidBrush brush = new SolidBrush(semiTransparentColor))
+            {
+                int diameter = innerRadius * 2;
+                int rectX = center.X - innerRadius;
+                int rectY = center.Y - innerRadius;
+
+                g.FillEllipse(brush, rectX, rectY, diameter, diameter);
+            }
+
+            // Draw outer half circle(s) to indicate left or right mouse button click(s)
+            int outerRadius = 30;
+            int deltaRadius = 8;
+
+            for (int i = 0; i < clicks; i++)
+            {
+                if (button == MouseButtons.Left)
+                {
+                    // Left half circle
+                    using (Pen pen = new Pen(_overlayColor, 2))
+                    {
+                        g.DrawArc(pen, center.X - outerRadius / 2, center.Y - outerRadius / 2, outerRadius, outerRadius, 90, 180);
+                    }
+                }
+                else if (button == MouseButtons.Right)
+                {
+                    // Right half circle
+                    using (Pen pen = new Pen(_overlayColor, 2))
+                    {
+                        g.DrawArc(pen, center.X - outerRadius / 2, center.Y - outerRadius / 2, outerRadius, outerRadius, 270, 180);
+                    }
+                }
+                outerRadius += deltaRadius;
+            }
+        }
+
+        private static void DrawDragOverlay(Graphics g, Point start, Point end)
+        {
+            using (Pen pen = new(_overlayColor, 3))
+            {
+                pen.EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
+                g.DrawLine(pen, start, end);
+            }
         }
 
         private static Point GetScreenshotOffset(int cursorX, int cursorY, int size)

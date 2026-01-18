@@ -12,6 +12,7 @@ namespace ClickLogger.Model
         private readonly ScreenshotCamera? _screenshotCamera;
         private readonly ISaveScreenshot? _saveScreenshot;
 
+        private MouseEventArgs? _dragStartEvent;
         private readonly Blacklist _blacklist = new Blacklist();
 
         public event EventHandler<bool>? RecordingStateChanged;
@@ -59,8 +60,9 @@ namespace ClickLogger.Model
 
             // Hook Global Mouse Events
             _globalHook = Hook.GlobalEvents();
-            _globalHook.MouseClick += LogEvent;
-            _globalHook.MouseDoubleClick += LogEvent;
+            _globalHook.MouseClick += OnClick;
+            _globalHook.MouseDragStarted += OnDragStart;
+            _globalHook.MouseDragFinished += OnDragEnd;
         }
 
         public void StopRecording()
@@ -74,8 +76,9 @@ namespace ClickLogger.Model
             // Cleanup
             if (_globalHook != null)
             {
-                _globalHook.MouseClick -= LogEvent;
-                _globalHook.MouseDoubleClick -= LogEvent;
+                _globalHook.MouseClick -= OnClick;
+                _globalHook.MouseDragStarted -= OnDragStart;
+                _globalHook.MouseDragFinished -= OnDragEnd;
                 _globalHook.Dispose();
                 _globalHook = null;
             }
@@ -85,13 +88,34 @@ namespace ClickLogger.Model
             _csvWriter = null;
         }
 
-        private void LogEvent(object? sender, MouseEventArgs e)
+        private void OnClick(object? sender, MouseEventArgs e)
         {
-            DateTime dateTime = DateTime.Now;
-            string timestampCsv = dateTime.ToString("yyyy-MM-dd HH:mm:ss.fff");
             string eventType = $"{e.Clicks}x {e.Button} Click";
             string eventParameter = $"{e.X};{e.Y}";
 
+            LogEvent(eventType, eventParameter, e);
+        }
+
+        private void OnDragStart(object? sender, MouseEventArgs e)
+        {
+            _dragStartEvent = e;
+        }
+
+        private void OnDragEnd(object? sender, MouseEventArgs e)
+        {
+            if (_dragStartEvent != null)
+            {
+                string eventType = $"{e.Button} drag";
+                string eventParameter = $"{_dragStartEvent.X};{_dragStartEvent.Y} to {e.X};{e.Y}";
+
+                LogEvent(eventType, eventParameter, _dragStartEvent, e);
+            }
+        }
+        private void LogEvent(string eventType, string eventParameter, MouseEventArgs startEventArgs, MouseEventArgs? endEventArgs = null)
+        {
+            DateTime dateTime = DateTime.Now;
+            string timestampCsv = dateTime.ToString("yyyy-MM-dd HH:mm:ss.fff");
+            
             var locatedWindowHandle = Locator.GetWindowHandleFromPoint(e.X, e.Y);
             string processName = string.Empty;
             string windowTitle = string.Empty;
@@ -109,7 +133,7 @@ namespace ClickLogger.Model
 
             if (_screenshotCamera != null && _saveScreenshot != null)
             {
-                Bitmap screenshot = ScreenshotCamera.TakeScreenshotAt(e, 400);
+                Bitmap screenshot = ScreenshotCamera.TakeScreenshotAt(startEventArgs, endEventArgs);
                 string screenshotFileName = $"{dateTime.ToString("yyyyMMdd_HHmmssfff")}.{GetScreenshotFileExtension()}";
                 string screenshotFilePath = Path.Combine(LogPath, screenshotFileName);
                 _saveScreenshot.Save(screenshot, screenshotFilePath);
