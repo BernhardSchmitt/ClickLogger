@@ -58,6 +58,7 @@ namespace ClickLogger.Model
             // Hook Global Mouse Events
             _globalHook = Hook.GlobalEvents();
             _globalHook.MouseClick += OnClick;
+            _globalHook.MouseDoubleClick += OnDoubleClick;
             _globalHook.MouseDragStarted += OnDragStart;
         }
 
@@ -73,6 +74,7 @@ namespace ClickLogger.Model
             if (_globalHook != null)
             {
                 _globalHook.MouseClick -= OnClick;
+                _globalHook.MouseDoubleClick -= OnDoubleClick;
                 _globalHook.MouseDragStarted -= OnDragStart;
                 _globalHook.MouseDragFinished -= OnDragEnd;
                 _globalHook.Dispose();
@@ -87,6 +89,14 @@ namespace ClickLogger.Model
         private void OnClick(object? sender, MouseEventArgs e)
         {
             string eventType = $"{e.Clicks}x {e.Button} Click";
+            string eventParameter = $"{e.X};{e.Y}";
+
+            LogEvent(eventType, eventParameter, e);
+        }
+
+        private void OnDoubleClick(object? sender, MouseEventArgs e)
+        {
+            string eventType = $"{e.Clicks}x {e.Button} Clicks";
             string eventParameter = $"{e.X};{e.Y}";
 
             LogEvent(eventType, eventParameter, e);

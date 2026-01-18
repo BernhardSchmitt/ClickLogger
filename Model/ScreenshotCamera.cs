@@ -9,39 +9,41 @@ namespace ClickLogger.Model
 
         public static Bitmap TakeScreenshotAt(MouseEventArgs startEventArgs, MouseEventArgs? endEventArgs = null, int minSize = 400)
         {
-            // extend screenshot size for drag events if necessary
-            int size = minSize;
+            Size size = new(minSize, minSize);
             if (endEventArgs != null)
             {
                 int deltaX = Math.Abs(endEventArgs.X - startEventArgs.X);
                 int deltaY = Math.Abs(endEventArgs.Y - startEventArgs.Y);
-                int requiredSize = Math.Max(deltaX, deltaY) + 100; // add some padding
-                if (requiredSize > minSize)
-                {
-                    size = requiredSize;
-                }
+                int padding = 200; // Increased padding for arrow visibility
+                size = new Size(Math.Max(minSize, deltaX + padding), Math.Max(minSize, deltaY + padding));
             }
-            Bitmap bitmap = new(size, size);
+
+            Bitmap bitmap = new(size.Width, size.Height);
 
             using (Graphics g = Graphics.FromImage(bitmap))
             {
-                // cursor position should be at center of screenshot if surrounding space allows
-                // calculate offset for top-left of screenshot
-                Point screenshotOffset = GetScreenshotOffset(startEventArgs.X, startEventArgs.Y, size);
-                g.CopyFromScreen(startEventArgs.X - screenshotOffset.X, startEventArgs.Y - screenshotOffset.Y, 0, 0, new Size(size, size));
-
                 if (endEventArgs == null)
                 {
-                    // It's a click event
-                    DrawClickOverlay(g, new Point(screenshotOffset.X, screenshotOffset.Y), startEventArgs.Button, startEventArgs.Clicks);
+                    // Single click screenshot
+                    Point offset = GetScreenshotOffset(startEventArgs.X, startEventArgs.Y, size);
+                    // Copy from screen using screen coordinates (Cursor - Offset)
+                    g.CopyFromScreen(startEventArgs.X - offset.X, startEventArgs.Y - offset.Y, 0, 0, size);
+                    DrawClickOverlay(g, offset, startEventArgs.Button, startEventArgs.Clicks);
                 }
                 else
                 {
-                    // It's a drag event
-                    Point startPoint = new Point(startEventArgs.X - (startEventArgs.X - screenshotOffset.X), startEventArgs.Y - (startEventArgs.Y - screenshotOffset.Y));
-                    Point endPoint = new Point(endEventArgs.X - (startEventArgs.X - screenshotOffset.X), endEventArgs.Y - (startEventArgs.Y - screenshotOffset.Y));
-                    // only endEvent contains button info
-                    DrawDragOverlay(g, startPoint, endPoint, endEventArgs.Button);
+                    // Drag screenshot
+                    int midX = (startEventArgs.X + endEventArgs.X) / 2;
+                    int midY = (startEventArgs.Y + endEventArgs.Y) / 2;
+                    Point offset = GetScreenshotOffset(midX, midY, size);
+                    
+                    g.CopyFromScreen(midX - offset.X, midY - offset.Y, 0, 0, size);
+
+                    // Map screen points to bitmap local coordinates
+                    Point localStart = new(startEventArgs.X - (midX - offset.X), startEventArgs.Y - (midY - offset.Y));
+                    Point localEnd = new(endEventArgs.X - (midX - offset.X), endEventArgs.Y - (midY - offset.Y));
+                    
+                    DrawDragOverlay(g, localStart, localEnd, endEventArgs.Button);
                 }
             }
             return bitmap;
@@ -49,87 +51,45 @@ namespace ClickLogger.Model
 
         private static void DrawClickOverlay(Graphics g, Point center, MouseButtons button, int clicks)
         {
-            // Draw overlay at click position
             Color semiTransparentColor = Color.FromArgb(128, _overlayColor.R, _overlayColor.G, _overlayColor.B);
             int innerRadius = 10;
 
             using (SolidBrush brush = new SolidBrush(semiTransparentColor))
             {
-                int diameter = innerRadius * 2;
-                int rectX = center.X - innerRadius;
-                int rectY = center.Y - innerRadius;
-
-                g.FillEllipse(brush, rectX, rectY, diameter, diameter);
+                g.FillEllipse(brush, center.X - innerRadius, center.Y - innerRadius, innerRadius * 2, innerRadius * 2);
             }
 
-            // Draw outer half circle(s) to indicate left or right mouse button click(s)
-            int outerRadius = 30;
+            int outerRadius = 20;
             int deltaRadius = 8;
 
-            for (int i = 0; i < clicks; i++)
+            using (Pen pen = new Pen(_overlayColor, 2))
             {
-                if (button == MouseButtons.Left)
+                for (int i = 0; i < clicks; i++)
                 {
-                    // Left half circle
-                    using (Pen pen = new Pen(_overlayColor, 2))
-                    {
-                        g.DrawArc(pen, center.X - outerRadius / 2, center.Y - outerRadius / 2, outerRadius, outerRadius, 90, 180);
-                    }
+                    // Rectangle must encompass the full diameter
+                    Rectangle rect = new Rectangle(center.X - outerRadius, center.Y - outerRadius, outerRadius * 2, outerRadius * 2);
+                    
+                    if (button == MouseButtons.Left)
+                        g.DrawArc(pen, rect, 90, 180);
+                    else if (button == MouseButtons.Right)
+                        g.DrawArc(pen, rect, 270, 180);
+                    
+                    outerRadius += deltaRadius;
                 }
-                else if (button == MouseButtons.Right)
-                {
-                    // Right half circle
-                    using (Pen pen = new Pen(_overlayColor, 2))
-                    {
-                        g.DrawArc(pen, center.X - outerRadius / 2, center.Y - outerRadius / 2, outerRadius, outerRadius, 270, 180);
-                    }
-                }
-                outerRadius += deltaRadius;
             }
         }
 
         private static void DrawDragOverlay(Graphics g, Point start, Point end, MouseButtons button)
         {
-            // Draw overlay at start position to indicate which button was used
-            Point center = start;
-            Color semiTransparentColor = Color.FromArgb(128, _overlayColor.R, _overlayColor.G, _overlayColor.B);
-            int innerRadius = 10;
+            // Draw the click indicator at the start point
+            DrawClickOverlay(g, start, button, 1);
 
-            using (SolidBrush brush = new SolidBrush(semiTransparentColor))
-            {
-                int diameter = innerRadius * 2;
-                int rectX = center.X - innerRadius;
-                int rectY = center.Y - innerRadius;
-
-                g.FillEllipse(brush, rectX, rectY, diameter, diameter);
-            }
-
-            // Draw outer half circle(s) to indicate left or right mouse button click(s)
-            int outerRadius = 30;
-            
-            if (button == MouseButtons.Left)
-            {
-                // Left half circle
-                using (Pen pen = new Pen(_overlayColor, 2))
-                {
-                    g.DrawArc(pen, center.X - outerRadius / 2, center.Y - outerRadius / 2, outerRadius, outerRadius, 90, 180);
-                }
-            }
-            else if (button == MouseButtons.Right)
-            {
-                // Right half circle
-                using (Pen pen = new Pen(_overlayColor, 2))
-                {
-                    g.DrawArc(pen, center.X - outerRadius / 2, center.Y - outerRadius / 2, outerRadius, outerRadius, 270, 180);
-                }
-            }
-            
-            // Draw line with arrow from start to end
+            // Draw line with arrow
             using (Pen pen = new(_overlayColor, 3))
             {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 g.DrawLine(pen, start, end);
                 
-                // Draw arrow head
                 float angle = (float)Math.Atan2(end.Y - start.Y, end.X - start.X);
                 float arrowSize = 15;
                 
@@ -147,44 +107,21 @@ namespace ClickLogger.Model
             }
         }
 
-        private static Point GetScreenshotOffset(int cursorX, int cursorY, int size)
+        private static Point GetScreenshotOffset(int targetX, int targetY, Size size)
         {
-            // Get the total bounding box of all displays (the virtual canvas)
-            Rectangle virtualScreenBounds = SystemInformation.VirtualScreen;
+            Rectangle virtualScreen = SystemInformation.VirtualScreen;
 
-            // 1. Calculate the initial top-left corner of the screenshot area
-            int left = cursorX - size / 2;
-            int top = cursorY - size / 2;
+            int left = targetX - size.Width / 2;
+            int top = targetY - size.Height / 2;
 
-            // 2. Adjust if boundaries are exceeded (Boundary checks for the virtual canvas)
+            // Clamp to screen boundaries
+            if (left < virtualScreen.Left) left = virtualScreen.Left;
+            if (top < virtualScreen.Top) top = virtualScreen.Top;
+            if (left + size.Width > virtualScreen.Right) left = virtualScreen.Right - size.Width;
+            if (top + size.Height > virtualScreen.Bottom) top = virtualScreen.Bottom - size.Height;
 
-            // Check against the LEFT edge of the virtual canvas (usually 0, but can be negative)
-            if (left < virtualScreenBounds.Left)
-            {
-                left = virtualScreenBounds.Left;
-            }
-
-            // Check against the TOP edge of the virtual canvas (usually 0, but can be negative)
-            if (top < virtualScreenBounds.Top)
-            {
-                top = virtualScreenBounds.Top;
-            }
-
-            // Check against the RIGHT edge of the virtual canvas
-            if (left + size > virtualScreenBounds.Right)
-            {
-                // Adjust 'left' so the right edge of the screenshot aligns with the virtual screen's right edge
-                left = virtualScreenBounds.Right - size;
-            }
-
-            // Check against the BOTTOM edge of the virtual canvas
-            if (top + size > virtualScreenBounds.Bottom)
-            {
-                // Adjust 'top' so the bottom edge of the screenshot aligns with the virtual screen's bottom edge
-                top = virtualScreenBounds.Bottom - size;
-            }
-
-            return new Point(cursorX - left, cursorY - top);
+            // Return the relative position of the target within the resulting bitmap
+            return new Point(targetX - left, targetY - top);
         }
     }
 }
