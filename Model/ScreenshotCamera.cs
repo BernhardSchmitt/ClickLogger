@@ -7,8 +7,20 @@ namespace ClickLogger.Model
     {
         private static readonly Color _overlayColor = Color.Red;
 
-        public static Bitmap TakeScreenshotAt(MouseEventArgs startEventArgs, MouseEventArgs? endEventArgs = null, int size = 400)
+        public static Bitmap TakeScreenshotAt(MouseEventArgs startEventArgs, MouseEventArgs? endEventArgs = null, int minSize = 400)
         {
+            // extend screenshot size for drag events if necessary
+            int size = minSize;
+            if (endEventArgs != null)
+            {
+                int deltaX = Math.Abs(endEventArgs.X - startEventArgs.X);
+                int deltaY = Math.Abs(endEventArgs.Y - startEventArgs.Y);
+                int requiredSize = Math.Max(deltaX, deltaY) + 100; // add some padding
+                if (requiredSize > minSize)
+                {
+                    size = requiredSize;
+                }
+            }
             Bitmap bitmap = new(size, size);
 
             using (Graphics g = Graphics.FromImage(bitmap))
@@ -28,7 +40,8 @@ namespace ClickLogger.Model
                     // It's a drag event
                     Point startPoint = new Point(startEventArgs.X - (startEventArgs.X - screenshotOffset.X), startEventArgs.Y - (startEventArgs.Y - screenshotOffset.Y));
                     Point endPoint = new Point(endEventArgs.X - (startEventArgs.X - screenshotOffset.X), endEventArgs.Y - (startEventArgs.Y - screenshotOffset.Y));
-                    DrawDragOverlay(g, startPoint, endPoint);
+                    // only endEvent contains button info
+                    DrawDragOverlay(g, startPoint, endPoint, endEventArgs.Button);
                 }
             }
             return bitmap;
@@ -75,12 +88,62 @@ namespace ClickLogger.Model
             }
         }
 
-        private static void DrawDragOverlay(Graphics g, Point start, Point end)
+        private static void DrawDragOverlay(Graphics g, Point start, Point end, MouseButtons button)
         {
+            // Draw overlay at start position to indicate which button was used
+            Point center = start;
+            Color semiTransparentColor = Color.FromArgb(128, _overlayColor.R, _overlayColor.G, _overlayColor.B);
+            int innerRadius = 10;
+
+            using (SolidBrush brush = new SolidBrush(semiTransparentColor))
+            {
+                int diameter = innerRadius * 2;
+                int rectX = center.X - innerRadius;
+                int rectY = center.Y - innerRadius;
+
+                g.FillEllipse(brush, rectX, rectY, diameter, diameter);
+            }
+
+            // Draw outer half circle(s) to indicate left or right mouse button click(s)
+            int outerRadius = 30;
+            
+            if (button == MouseButtons.Left)
+            {
+                // Left half circle
+                using (Pen pen = new Pen(_overlayColor, 2))
+                {
+                    g.DrawArc(pen, center.X - outerRadius / 2, center.Y - outerRadius / 2, outerRadius, outerRadius, 90, 180);
+                }
+            }
+            else if (button == MouseButtons.Right)
+            {
+                // Right half circle
+                using (Pen pen = new Pen(_overlayColor, 2))
+                {
+                    g.DrawArc(pen, center.X - outerRadius / 2, center.Y - outerRadius / 2, outerRadius, outerRadius, 270, 180);
+                }
+            }
+            
+            // Draw line with arrow from start to end
             using (Pen pen = new(_overlayColor, 3))
             {
-                pen.EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
                 g.DrawLine(pen, start, end);
+                
+                // Draw arrow head
+                float angle = (float)Math.Atan2(end.Y - start.Y, end.X - start.X);
+                float arrowSize = 15;
+                
+                PointF arrowPoint1 = new(
+                    end.X - arrowSize * (float)Math.Cos(angle - Math.PI / 6),
+                    end.Y - arrowSize * (float)Math.Sin(angle - Math.PI / 6)
+                );
+                PointF arrowPoint2 = new(
+                    end.X - arrowSize * (float)Math.Cos(angle + Math.PI / 6),
+                    end.Y - arrowSize * (float)Math.Sin(angle + Math.PI / 6)
+                );
+                
+                g.DrawLine(pen, end, arrowPoint1);
+                g.DrawLine(pen, end, arrowPoint2);
             }
         }
 

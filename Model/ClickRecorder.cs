@@ -11,14 +11,11 @@ namespace ClickLogger.Model
         private StreamWriter? _csvWriter;
         private readonly ScreenshotCamera? _screenshotCamera;
         private readonly ISaveScreenshot? _saveScreenshot;
-
         private MouseEventArgs? _dragStartEvent;
         private readonly Blacklist _blacklist = new Blacklist();
 
         public event EventHandler<bool>? RecordingStateChanged;
-
         public bool IsRecording { get; private set; }
-
         public string LogPath { get; private set; } = string.Empty;
 
         public ClickRecorder(ScreenshotCamera? screenshotCamera = null, ISaveScreenshot? saveScreenshot = null)
@@ -62,7 +59,6 @@ namespace ClickLogger.Model
             _globalHook = Hook.GlobalEvents();
             _globalHook.MouseClick += OnClick;
             _globalHook.MouseDragStarted += OnDragStart;
-            _globalHook.MouseDragFinished += OnDragEnd;
         }
 
         public void StopRecording()
@@ -99,6 +95,10 @@ namespace ClickLogger.Model
         private void OnDragStart(object? sender, MouseEventArgs e)
         {
             _dragStartEvent = e;
+            if (_globalHook != null)
+            {
+                _globalHook.MouseDragFinished += OnDragEnd;
+            }
         }
 
         private void OnDragEnd(object? sender, MouseEventArgs e)
@@ -110,13 +110,20 @@ namespace ClickLogger.Model
 
                 LogEvent(eventType, eventParameter, _dragStartEvent, e);
             }
+
+            _dragStartEvent = null;
+            if (_globalHook != null)
+            {
+                _globalHook.MouseDragFinished -= OnDragEnd;
+            }
         }
         private void LogEvent(string eventType, string eventParameter, MouseEventArgs startEventArgs, MouseEventArgs? endEventArgs = null)
         {
             DateTime dateTime = DateTime.Now;
             string timestampCsv = dateTime.ToString("yyyy-MM-dd HH:mm:ss.fff");
             
-            var locatedWindowHandle = Locator.GetWindowHandleFromPoint(e.X, e.Y);
+            // Check blacklist
+            var locatedWindowHandle = Locator.GetWindowHandleFromPoint(startEventArgs.X, startEventArgs.Y);
             string processName = string.Empty;
             string windowTitle = string.Empty;
             
@@ -131,6 +138,7 @@ namespace ClickLogger.Model
                 }
             }
 
+            // Take screenshot if enabled and log event
             if (_screenshotCamera != null && _saveScreenshot != null)
             {
                 Bitmap screenshot = ScreenshotCamera.TakeScreenshotAt(startEventArgs, endEventArgs);
