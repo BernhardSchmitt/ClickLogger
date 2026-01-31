@@ -33,7 +33,7 @@ namespace ClickLogger.Model
                 throw new InvalidOperationException("Folder path and file name must be set before recording.");
             }
             string filePath = Path.Combine(path, GetLogFileName());
-            
+
             if (File.Exists(filePath))
             {
                 throw new InvalidOperationException("File already exists. Please choose a different file path.");
@@ -53,7 +53,7 @@ namespace ClickLogger.Model
             // Initialize CSV and write header
             _csvWriter = new StreamWriter(filePath, append: true) { AutoFlush = true };
             _csvWriter.WriteLine("Timestamp,ProcessName,WindowTitle,Event,EventParameter,Screenshot");
-            
+
 
             // Hook Global Mouse Events
             _globalHook = Hook.GlobalEvents();
@@ -131,12 +131,12 @@ namespace ClickLogger.Model
         {
             DateTime dateTime = DateTime.Now;
             string timestampCsv = dateTime.ToString("yyyy-MM-dd HH:mm:ss.fff");
-            
+
             // Check blacklist
             var locatedWindowHandle = Locator.GetWindowHandleFromPoint(startEventArgs.X, startEventArgs.Y);
             string processName = string.Empty;
             string windowTitle = string.Empty;
-            
+
             if (locatedWindowHandle != IntPtr.Zero)
             {
                 processName = Locator.GetProcessNameFromWindowHandle(locatedWindowHandle);
@@ -148,6 +148,9 @@ namespace ClickLogger.Model
                 }
             }
 
+            // Escape CSV fields to avoid issues with commas and quotes
+            string EscapeCsvField(string field) => $"\"{field.Replace("\"", "\"\"")}\"";
+
             // Take screenshot if enabled and log event
             if (_screenshotCamera != null && _saveScreenshot != null)
             {
@@ -155,11 +158,11 @@ namespace ClickLogger.Model
                 string screenshotFileName = $"{dateTime.ToString("yyyyMMdd_HHmmssfff")}.{GetScreenshotFileExtension()}";
                 string screenshotFilePath = Path.Combine(LogPath, screenshotFileName);
                 _saveScreenshot.Save(screenshot, screenshotFilePath);
-                _csvWriter?.WriteLine($"{timestampCsv},{processName},{windowTitle},{eventType},{eventParameter},{screenshotFileName}");
+                _csvWriter?.WriteLine($"{timestampCsv},{EscapeCsvField(processName)},{EscapeCsvField(windowTitle)},{EscapeCsvField(eventType)},{EscapeCsvField(eventParameter)},{screenshotFileName}");
             }
             else
             {
-                _csvWriter?.WriteLine($"{timestampCsv},{processName},{windowTitle},{eventType},{eventParameter},");
+                _csvWriter?.WriteLine($"{timestampCsv},{EscapeCsvField(processName)},{EscapeCsvField(windowTitle)},{EscapeCsvField(eventType)},{EscapeCsvField(eventParameter)},");
             }
         }
 
