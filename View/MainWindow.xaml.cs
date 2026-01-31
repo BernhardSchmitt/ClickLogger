@@ -2,7 +2,9 @@ using System;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using ClickLogger.ViewModel;
 
@@ -12,6 +14,9 @@ namespace ClickLogger.View
     {
         private MainViewModel? ViewModel => DataContext as MainViewModel;
         private Storyboard _pulseStoryboard;
+        
+        private readonly ImageSource _recOverlay = BitmapFrame.Create(new Uri("pack://application:,,,/recOverlay.ico", UriKind.Absolute));
+
 
         public MainWindow()
         {
@@ -47,11 +52,18 @@ namespace ClickLogger.View
                 if (ViewModel.IsRecording)
                 {
                     _pulseStoryboard.Begin();
+                    
+                    TaskbarInfo.Overlay = _recOverlay;
+                    TaskbarInfo.Description = "Recording…";
+
                 }
                 else
                 {
                     _pulseStoryboard.Stop();
                     PulseEffect.Opacity = 0; // Ensure glow is off
+
+                    TaskbarInfo.Overlay = null;
+                    TaskbarInfo.Description = "Ready for recording";
                 }
             }
         }

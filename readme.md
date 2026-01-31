@@ -35,6 +35,11 @@ A mouse event logger with screenshot capture, designed as a modern alternative t
     dotnet run
     ```
 
+4. Create release build:
+    ```
+    dotnet publish ClickLogger.csproj -c Release
+    ```
+
 ## Usage
 
 1. Launch ClickLogger
